@@ -5,11 +5,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
-import { getRelativeTime } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import Button from '@/components/ui/Button';
+import { getRelativeTime, cn } from '@/lib/utils';
 
 interface NotificationDropdownProps {
   onClose: () => void;

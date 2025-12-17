@@ -7,7 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Task, Priority, CreateTaskInput, UpdateTaskInput } from '@/types';
+import { Task, Priority, CreateTaskInput, UpdateTaskInput, User } from '@/types';
 import { useUsers } from '@/hooks/useNotifications';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -32,7 +32,7 @@ type TaskFormData = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
   task?: Task;
-  onSubmit: (data: CreateTaskInput | UpdateTaskInput) => Promise<void>;
+  onSubmit: (data: CreateTaskInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -76,9 +76,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
   }, [task, reset]);
 
   const handleFormSubmit = async (data: TaskFormData) => {
-    const payload = {
-      ...data,
+    const payload: CreateTaskInput = {
+      title: data.title,
+      description: data.description,
       dueDate: new Date(data.dueDate).toISOString(),
+      priority: data.priority,
       assignedToId: data.assignedToId || undefined,
     };
     await onSubmit(payload);
@@ -91,7 +93,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const userOptions = [
     { value: '', label: 'Unassigned' },
-    ...users.map((user) => ({
+    ...users.map((user: User) => ({
       value: user._id,
       label: user.name,
     })),

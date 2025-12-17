@@ -2,11 +2,11 @@
  * Tasks Page
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
-import { Task, TaskFilters, CreateTaskInput, UpdateTaskInput, Priority, TaskStatus } from '@/types';
+import { Task, TaskFilters, CreateTaskInput, Priority, TaskStatus } from '@/types';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import TaskList from '@/components/tasks/TaskList';
@@ -54,7 +54,7 @@ const TasksPage: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleUpdateTask = async (taskData: UpdateTaskInput) => {
+  const handleUpdateTask = async (taskData: CreateTaskInput) => {
     if (!editingTask) return;
     await updateTask.mutateAsync({ id: editingTask._id, data: taskData });
     setEditingTask(null);

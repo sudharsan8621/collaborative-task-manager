@@ -3,11 +3,9 @@
  */
 
 import React from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { TaskFilters as ITaskFilters, Priority, TaskStatus } from '@/types';
-import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import Button from '@/components/ui/Button';
 
 interface TaskFiltersProps {
   filters: ITaskFilters;

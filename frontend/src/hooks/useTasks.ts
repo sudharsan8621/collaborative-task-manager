@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskService } from '@/services/task.service';
-import { TaskFilters, CreateTaskInput, UpdateTaskInput, Task } from '@/types';
+import { TaskFilters, CreateTaskInput, UpdateTaskInput } from '@/types';
 import toast from 'react-hot-toast';
 
 /**
@@ -51,8 +51,8 @@ export const useCreateTask = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Task created successfully');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create task');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create task');
     },
   });
 };
@@ -66,35 +66,14 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskInput }) =>
       taskService.updateTask(id, data),
-    onMutate: async ({ id, data }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['task', id] });
-
-      // Snapshot the previous value
-      const previousTask = queryClient.getQueryData<Task>(['task', id]);
-
-      // Optimistically update
-      if (previousTask) {
-        queryClient.setQueryData<Task>(['task', id], {
-          ...previousTask,
-          ...data,
-        });
-      }
-
-      return { previousTask };
-    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Task updated successfully');
     },
-    onError: (error: any, { id }, context) => {
-      // Rollback on error
-      if (context?.previousTask) {
-        queryClient.setQueryData(['task', id], context.previousTask);
-      }
-      toast.error(error.response?.data?.message || 'Failed to update task');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update task');
     },
   });
 };
@@ -112,8 +91,8 @@ export const useDeleteTask = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Task deleted successfully');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete task');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete task');
     },
   });
 };

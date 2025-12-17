@@ -6,7 +6,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ClipboardList,
-  Clock,
   AlertTriangle,
   CheckCircle,
   TrendingUp,
@@ -75,7 +74,7 @@ const DashboardPage: React.FC = () => {
             <div key={stat.name} className="card p-6">
               <div className="flex items-center">
                 <div className={cn('p-3 rounded-lg', stat.bgColor)}>
-                  <stat.icon className={cn('w-6 h-6 text-white', stat.color.replace('bg-', 'text-'))} />
+                  <stat.icon className={cn('w-6 h-6', stat.color.replace('bg-', 'text-'))} />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm text-gray-500">{stat.name}</p>
@@ -100,7 +99,7 @@ const DashboardPage: React.FC = () => {
                 ? Math.round((count / data.stats.total) * 100)
                 : 0;
               
-              const colors = {
+              const colors: Record<string, string> = {
                 [Priority.LOW]: 'bg-gray-400',
                 [Priority.MEDIUM]: 'bg-blue-500',
                 [Priority.HIGH]: 'bg-orange-500',

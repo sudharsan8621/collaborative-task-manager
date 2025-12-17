@@ -64,15 +64,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     // Handle real-time task updates
-    newSocket.on('task:created', (task: Task) => {
+    newSocket.on('task:created', () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     });
 
-    newSocket.on('task:updated', ({ task, changes }: { task: Task; changes: Record<string, unknown> }) => {
+    newSocket.on('task:updated', () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['task', task._id] });
     });
 
     newSocket.on('task:deleted', ({ taskId }: { taskId: string }) => {

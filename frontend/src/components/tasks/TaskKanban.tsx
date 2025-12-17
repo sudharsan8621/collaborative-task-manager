@@ -1,19 +1,17 @@
 /**
  * Task Kanban Board Component
- * Alternative view for tasks organized by status
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Task, TaskStatus } from '@/types';
 import TaskCard from './TaskCard';
-import { cn, getStatusColor } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface TaskKanbanProps {
   tasks: Task[];
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
-  onStatusChange?: (taskId: string, newStatus: TaskStatus) => void;
 }
 
 const columns: { status: TaskStatus; label: string }[] = [
@@ -27,7 +25,6 @@ const TaskKanban: React.FC<TaskKanbanProps> = ({
   tasks,
   onEdit,
   onDelete,
-  onStatusChange,
 }) => {
   const getTasksByStatus = (status: TaskStatus) =>
     tasks.filter((task) => task.status === status);
