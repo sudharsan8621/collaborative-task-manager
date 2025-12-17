@@ -1,89 +1,81 @@
 /**
- * Task Form Component
+ * @fileoverview Task creation/editing form component
  */
 
-import React, { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Task, Priority, CreateTaskInput, UpdateTaskInput, User } from '@/types';
-import { useUsers } from '@/hooks/useNotifications';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import Textarea from '@/components/ui/Textarea';
-import Select from '@/components/ui/Select';
+import { Search, X } from 'lucide-react';
+import { Priority, TaskStatus, Task, User } from '@/types';
+import { useSearchUsers } from '@/hooks/useAuth';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
 
 const taskSchema = z.object({
   title: z
     .string()
     .min(1, 'Title is required')
-    .max(100, 'Title must be less than 100 characters'),
-  description: z
-    .string()
-    .min(1, 'Description is required')
-    .max(5000, 'Description must be less than 5000 characters'),
+    .max(100, 'Title cannot exceed 100 characters'),
+  description: z.string().min(1, 'Description is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   priority: z.nativeEnum(Priority),
-  assignedToId: z.string().optional(),
+  status: z.nativeEnum(TaskStatus).optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
   task?: Task;
-  onSubmit: (data: CreateTaskInput) => Promise<void>;
+  onSubmit: (data: TaskFormData & { assignedToId?: string | null }) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({
+export const TaskForm: React.FC<TaskFormProps> = ({
   task,
   onSubmit,
   onCancel,
-  isLoading = false,
+  isLoading,
 }) => {
-  const { data: users = [] } = useUsers();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+
+  const { data: searchResults } = useSearchUsers(searchQuery);
 
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
-    reset,
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      dueDate: format(new Date(Date.now() + 86400000), "yyyy-MM-dd'T'HH:mm"),
-      priority: Priority.MEDIUM,
-      assignedToId: '',
+      title: task?.title || '',
+      description: task?.description || '',
+      dueDate: task?.dueDate
+        ? format(new Date(task.dueDate), "yyyy-MM-dd'T'HH:mm")
+        : '',
+      priority: task?.priority || Priority.MEDIUM,
+      status: task?.status,
     },
   });
 
-  // Populate form when editing
   useEffect(() => {
-    if (task) {
-      reset({
-        title: task.title,
-        description: task.description,
-        dueDate: format(new Date(task.dueDate), "yyyy-MM-dd'T'HH:mm"),
-        priority: task.priority,
-        assignedToId: task.assignedToId?._id || '',
-      });
+    if (task?.assignedToId && typeof task.assignedToId !== 'string') {
+      setSelectedUser(task.assignedToId as User);
     }
-  }, [task, reset]);
+  }, [task]);
 
-  const handleFormSubmit = async (data: TaskFormData) => {
-    const payload: CreateTaskInput = {
-      title: data.title,
-      description: data.description,
-      dueDate: new Date(data.dueDate).toISOString(),
-      priority: data.priority,
-      assignedToId: data.assignedToId || undefined,
-    };
-    await onSubmit(payload);
+  const handleFormSubmit = (data: TaskFormData) => {
+    onSubmit({
+      ...data,
+      assignedToId: selectedUser?._id || null,
+    });
   };
 
   const priorityOptions = Object.values(Priority).map((p) => ({
@@ -91,13 +83,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
     label: p,
   }));
 
-  const userOptions = [
-    { value: '', label: 'Unassigned' },
-    ...users.map((user: User) => ({
-      value: user._id,
-      label: user.name,
-    })),
-  ];
+  const statusOptions = Object.values(TaskStatus).map((s) => ({
+    value: s,
+    label: s,
+  }));
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
@@ -124,36 +113,98 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {...register('dueDate')}
         />
 
-        <Controller
-          name="priority"
-          control={control}
-          render={({ field }) => (
-            <Select
-              label="Priority"
-              options={priorityOptions}
-              value={field.value}
-              onChange={field.onChange}
-              error={errors.priority?.message}
-            />
-          )}
+        <Select
+          label="Priority"
+          options={priorityOptions}
+          error={errors.priority?.message}
+          {...register('priority')}
         />
       </div>
 
-      <Controller
-        name="assignedToId"
-        control={control}
-        render={({ field }) => (
-          <Select
-            label="Assign To"
-            options={userOptions}
-            value={field.value || ''}
-            onChange={field.onChange}
-            error={errors.assignedToId?.message}
-          />
-        )}
-      />
+      {task && (
+        <Select
+          label="Status"
+          options={statusOptions}
+          error={errors.status?.message}
+          {...register('status')}
+        />
+      )}
 
-      <div className="flex justify-end space-x-3 pt-4">
+      {/* Assignee Selection */}
+      <div>
+        <label className="label">Assign To</label>
+        {selectedUser ? (
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Avatar name={selectedUser.name} size="sm" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedUser.name}
+                </p>
+                <p className="text-xs text-gray-500">{selectedUser.email}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedUser(null)}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowUserSearch(true);
+                }}
+                onFocus={() => setShowUserSearch(true)}
+                className="input pl-10"
+              />
+            </div>
+            
+            {showUserSearch && searchResults && searchResults.length > 0 && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowUserSearch(false)}
+                />
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-48 overflow-y-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user._id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setSearchQuery('');
+                        setShowUserSearch(false);
+                      }}
+                      className="flex items-center gap-2 w-full p-3 hover:bg-gray-50 text-left"
+                    >
+                      <Avatar name={user.name} size="sm" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -164,5 +215,3 @@ const TaskForm: React.FC<TaskFormProps> = ({
     </form>
   );
 };
-
-export default TaskForm;
